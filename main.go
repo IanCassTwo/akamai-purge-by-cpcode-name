@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Our regular API key. Needs read permissions for "CPcode and Reporting group (cprg)"
-        config, err := edgegrid.Init("~/.edgerc", "papi")
+        config, err := edgegrid.Init("~/.edgerc", "default")
         if err != nil {
 		log.Fatal(err)
         }
