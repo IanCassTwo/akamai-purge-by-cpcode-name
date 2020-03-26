@@ -71,6 +71,7 @@ func main() {
 		log.Fatal(err)
         }
 
+	// Request a list of CPCodes
 	req, err := client.NewRequest(config, "GET", "/cprg/v1/cpcodes", nil)
 	resp, _ := client.Do(config, req)
         if err != nil {
@@ -88,18 +89,28 @@ func main() {
         var cpcodes Cpcodes
         err = json.Unmarshal(byt, &cpcodes)
 
-	// Find out CPCode
+	// Iterate CPCodes to find the one that we need
 	for _, item := range cpcodes.Cpcodes {
 		if item.CpcodeName == os.Args[1] {
 
+			// Code found - let's purge it
 			var purgerequest PurgeRequest
 			purgerequest.Objects = append(purgerequest.Objects, item.CpcodeID)
 			p,_ := json.Marshal(purgerequest)
 
 			req, _ = client.NewRequest(ccuconfig, "POST", fmt.Sprintf("/ccu/v3/invalidate/cpcode%s", network), bytes.NewBuffer(p))
-			resp, _ = client.Do(ccuconfig, req)
+			resp, err = client.Do(ccuconfig, req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			byt, _ = ioutil.ReadAll(resp.Body)
 			defer resp.Body.Close()
+
+			if (resp.StatusCode != 201) {
+				fmt.Println(string(byt))
+				os.Exit(1)
+			}
 
 			var purgeresponse PurgeResponse
         		err = json.Unmarshal(byt, &purgeresponse)
@@ -110,6 +121,8 @@ func main() {
 			os.Exit(0)
 		}
 	}
+
+	// Only get here if we couldn't find out code
 	fmt.Printf("Couldn't find cpcode for %s\n", os.Args[1])
 
 }
